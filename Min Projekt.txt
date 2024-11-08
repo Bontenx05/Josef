@@ -1,0 +1,75 @@
+import argparse
+from cryptography.fernet import Fernet
+
+# Här så har jag en funktion som genererar en ny krypteringsnyckel med fernet.
+def generate_key(file_path):
+    key = Fernet.generate_key()
+    with open(file_path, 'wb') as key_file:
+        key_file.write(key)
+    print(f'Nyckel genererad och sparad i {file_path}')
+
+# Läser nyckeln frpm file.
+def encrypt_file(file_path, key_file_path):
+    with open(key_file_path, 'rb') as key_file:
+        key = key_file.read()
+    fernet = Fernet(key)
+
+    with open(file_path, 'rb') as file:
+        original = file.read()
+
+    encrypted = fernet.encrypt(original)
+
+    with open(file_path + '.enc', 'wb') as encrypted_file:
+        encrypted_file.write(encrypted)
+    print(f'Fil {file_path} har krypterats och sparats som {file_path}.enc')
+
+#Den liknar 'encrypt_file' men använder 'fernet.decrypt()' för att dekryptera.
+def decrypt_file(encrypted_file_path, key_file_path):
+
+    with open(key_file_path, 'rb') as key_file:
+        key = key_file.read()
+    fernet = Fernet(key)
+
+    with open(encrypted_file_path, 'rb') as encrypted_file:
+        encrypted = encrypted_file.read()
+
+    decrypted = fernet.decrypt(encrypted)
+
+    output_file = encrypted_file_path.replace('.enc', '')
+    with open(output_file, 'wb') as decrypted_file:
+        decrypted_file.write(decrypted)
+    print(f'Fil {encrypted_file_path} har dekrypterats och sparats som {output_file}')
+
+#Här så skapar den en ArgumentParser för att hantera kommandoradsargument. Och definerar tre underkommandon. 
+def main():
+    parser = argparse.ArgumentParser(description='Filkrypteringsverktyg')
+    subparsers = parser.add_subparsers(dest='command', help='Tillgängliga kommandon')
+
+    
+    generate_parser = subparsers.add_parser('generate', help='Generera en ny krypteringsnyckel')
+    generate_parser.add_argument('key_file', help='Sökväg till nyckelfilen')
+
+    
+    encrypt_parser = subparsers.add_parser('encrypt', help='Kryptera en fil')
+    encrypt_parser.add_argument('file', help='Fil att kryptera')
+    encrypt_parser.add_argument('key_file', help='Sökväg till nyckelfilen')
+
+    
+    decrypt_parser = subparsers.add_parser('decrypt', help='Dekryptera en fil')
+    decrypt_parser.add_argument('file', help='Fil att dekryptera')
+    decrypt_parser.add_argument('key_file', help='Sökväg till nyckelfilen')
+
+    args = parser.parse_args()
+
+    if args.command == 'generate':
+        generate_key(args.key_file)
+    elif args.command == 'encrypt':
+        encrypt_file(args.file, args.key_file)
+    elif args.command == 'decrypt':
+        decrypt_file(args.file, args.key_file)
+    else:
+        parser.print_help()
+
+#Detta säkerställer att main() är endast körs om skriptet körs direkt, altså inte importeras som en modul.
+if __name__ == '__main__':
+    main()
